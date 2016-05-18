@@ -14,25 +14,88 @@ pp = pprint.PrettyPrinter( indent=2  )
 class Test ( object ) :
     """Methods to test anything"""
 
-    self.INFORMATIONAL=0
-    self.WARNING=1
-    self.ERROR=2
-    self.FATAL=3
+    self.OKAY = 0
+    self.INFORMATIONAL=1
+    self.WARNING=2
+    self.ERROR=3
+    self.FATAL=4
+    self.ACTUAL_RESULT_MISSING_VALUES=100
+    self.ACTUAL_RESULT_TOO_MANY_VALUES=101
+    self.ACTUAL_RESULT_WRONG_VALUE=102
+    self.ACTUAL_RESULT_WRONG_TYPE=103
+    
+    
 
     def __init__ ( self, query_method, severity=self.WARNING ):
 
         self.query_method = query_method
         self.severify = severity
 
-    def test ( self, query, expected_result, severity=None)
+    def test ( self, query, expected_result, severity=None):
         actual_result = self.query_method ( query )
         if type(actual_result) == type([]) :
+            if not cmp(actual_result, epected_result) :
+                return 0, "Okay"
+            else :
+                result, explanation = compare_list( actual_result, expected_result )
+            return result, explanation
+        else :
+# Surely there are other types that can be tested.            
+            if actual_result != expected_result :
+                explanation = "Actual result is %s expected result was %s" % \
+                    ( str(actual_result), str(expected_result) )
+                return self.ACTUAL_RESULT_WRONG_TYPE, explanation
+            
+
+    def compare_list ( actual_result, expected_result ):
+        """This is a more subtle and informative test than merely testing
+for equality"""
+        len_actual = len(actual_result)
+        len_expected = len(expected_result)
+        if len_actual > len_expected :
+            explanation = "There are %d elements in the actual list but only %d \
+ were expected" % ( len_actual, len_expected)
+# A future version will give more detail about the differences
+            return self.ACTUAL_RESULT_TOO_MANY_VALUES, explanation
+        elif len_actual < len_expected :
+            explanation = "There are only %d elements in the actual list but %d \
+ were expected" % ( len_actual, len_expected)
+            return self.ACTUAL_RESULT_MISSING_VALUES, explanation
+        else :
             actual_result.sort()
             expected_result.sort()
-# There are more error syndromes than this.  Suppose the number of actual results
-# is not the same as the number of expected results?
-            for l in actual_result :
-                if l not 
+            explanation = ""
+            for i in actual_result :
+                if actual_result[i] != expected_result[i] :
+                    explanation += "At %d, the actual was %s but the expected was %s" % \
+                    ( i, str(actual_result[i]), str(expected_result[i] ) )
+            return self.ACTUAL_RESULT_WRONG_VALUE, explanation
+        raise AssertionError("Reached an impossible spot in compare_list()")
+    
+    def unit_test () :
+        """This method is designed to test this class"""
+
+        def test_list_query_1 ( n ) :
+            return list( "X" * n )
+
+        def test_list_query_2 ( n ) :
+            return list( "Y" * n )
+
+        c = class Test ( query_method=test_list_query_1 )
+        expected = test_list_query_1( 4)
+        result, explanation = c.test ( query=4 )
+        if ( result != c.OKAY ):
+            print ( "There was a problem: %s ", explanation )
+        else :
+            print ("Passed")
+
+        expected = test_list_query_1( 4)
+        result, explanation = c.test ( query=4 )
+        if ( result != c.OKAY ):
+            print ( "There was a problem: %s ", explanation )
+        else :
+            print ("Passed")
+
         
     
 
@@ -58,7 +121,7 @@ for this key should be empty"""
     
 
 def get_args ( ):
-    """Parse the command line arguments"""
+    """Parse the command line arguments""" sitedown_01.json
 
     parser = argparse.ArgumentParser()
 # Optional arguments go here (from
@@ -87,9 +150,14 @@ def parse_config_file ( config_file ):
 
 if __name__ == "__main__" :
     args = get_args()
+    if args['self-test'] :
+        test = Test()
+        test.unit_test()
     config = parse_config_file ( args.configuration )
     pp.pprint( config )
     dns = Dns( config['dns'] )
     ipv4 = Ipv4 ( config['ipv4'] )
     ipv6 = Ipv6 ( config['ipv6'] )
+
+    
     

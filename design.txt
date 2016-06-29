@@ -1,0 +1,35 @@
+Let's think about the steps required to diagnose a web site.  I think these are in order.  Note that this is for diagnosis, not alerting
+
+Local router failure
+  wrong local router IP address
+  Local router IP address unreachable
+  wrong MAC address from ARP cache (Cache not up to date)
+  wrong MAC address from ARP request (Somebody on the LAN is sending a bad ARP response)
+  Network Detection Protocol failure (I don't know enough about NDP)
+
+site name failure?
+  Name servers in cache unreachable
+  DNS failure
+    Wrong name servers for domain (NS records in registrar)
+    Wrong name servers for delegated sub- domain (NS records in my name server)
+    Wrong IPv4 address for server (A records)
+    Wrong IPv6 address for server (AAAA records)
+  gethostbyname wrong result (IPv4) or ipaddress.IPv6Address  (see https://docs.python.org/3/library/ipaddress.html)
+
+Routing failure, firewall failure
+  remote IP address unpingable ping or ping6 (Not necessarily a failure, but noteworthy)
+  tcptracepath goes the wrong way
+  tracepath6 goes the wrong way
+
+Remote host port not listening
+  tcp port sends RESET packet
+  tcp port does *not* send SYN ACK packet
+
+Application no response (3 handshake completes but then nothing)
+Application incorrect response (application dependent)
+Application health check failure
+HTTP application sends 4xx error in response to known good query
+HTTP application sends 5xx error in response to known good query
+SSL failure
+
+

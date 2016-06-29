@@ -11,7 +11,7 @@ from collections import OrderedDict
 
 pp = pprint.PrettyPrinter( indent=2  )
 
-class Test ( object ) :
+class Any_test ( object ) :
     """Methods to test anything"""
 
     self.OKAY = 0
@@ -31,7 +31,7 @@ class Test ( object ) :
         self.query_method = query_method
         self.severify = severity
 
-    def test ( self, query, expected_result, severity=None):
+    def do_test ( self, query, expected_result, severity=None):
         actual_result = self.query_method ( query )
         if type(actual_result) == type([]) :
             if not cmp(actual_result, epected_result) :
@@ -72,30 +72,6 @@ for equality"""
             return self.ACTUAL_RESULT_WRONG_VALUE, explanation
         raise AssertionError("Reached an impossible spot in compare_list()")
     
-    def unit_test () :
-        """This method is designed to test this class"""
-
-        def test_list_query_1 ( n ) :
-            return list( "X" * n )
-
-        def test_list_query_2 ( n ) :
-            return list( "Y" * n )
-
-        c = class Test ( query_method=test_list_query_1 )
-        expected = test_list_query_1( 4)
-        result, explanation = c.test ( query=4 )
-        if ( result != c.OKAY ):
-            print ( "There was a problem: %s ", explanation )
-        else :
-            print ("Passed")
-
-        expected = test_list_query_1( 4)
-        result, explanation = c.test ( query=4 )
-        if ( result != c.OKAY ):
-            print ( "There was a problem: %s ", explanation )
-        else :
-            print ("Passed")
-
         
     
 
@@ -140,8 +116,8 @@ def get_args ( ):
 def parse_config_file ( config_file ):
     """This subroutine parses a configuration file"""
 
-# I want to maintain the order of elements in the imported dictionar, so use an ordered
-# dictionary
+# I want to maintain the order of elements in the imported dictionar, so use an
+# ordered dictionary
 # From http://stackoverflow.com/questions/6921699/can-i-get-json-to-load-into-an-ordereddict-in-python
     with open(config_file, "r") as json_data:
         configuration = json.load(json_data, object_pairs_hook=OrderedDict)

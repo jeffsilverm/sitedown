@@ -8,105 +8,157 @@
     <h1>Site Down preliminary design<br>
     </h1>
     <br>
-    Let's think about the steps required to diagnose a web site.<br>
-    <ol>
-      <li>Do I have IP connectivity?&nbsp; Ping is a good but not
-        conclusive test.&nbsp; ping6 is conclusive</li>
-      <ol>
-        <li>Did I get to the right IP address?</li>
-        <li>site name failure?<br>
-          &nbsp; DNS failure<br>
-          &nbsp;&nbsp;&nbsp; Wrong name servers for domain (NS records)<br>
-          &nbsp;&nbsp;&nbsp; Wrong A records<br>
-          &nbsp;&nbsp;&nbsp; Wrong AAAA records<br>
-          &nbsp; gethostbyname wrong result (IPv4) or
+    Let's think about the steps required to diagnose a web site.&nbsp; I
+    think these are in order.&nbsp; Note that this is for diagnosis, not
+    alerting<br>
+    <br>
+    <ul>
+      <li>Local router failure</li>
+      <ul>
+        <li>wrong local router IP address</li>
+        <li>Local router IP address unreachable</li>
+        <li>wrong MAC address from ARP cache (Cache not up to date)</li>
+        <li>wrong MAC address from ARP request (Somebody on the LAN is
+          sending a bad ARP response)</li>
+        <li>No MAC address in ARP cache (router is not responding to ARP
+          requests - bad wire or router down)</li>
+        <li>Network Detection Protocol failure (I don't know enough
+          about NDP)</li>
+      </ul>
+      <li>site name failure?</li>
+      <ul>
+        <li>Name servers in cache unreachable</li>
+        <li>DNS failure</li>
+        <li>Wrong name servers for domain (NS records in registrar)</li>
+        <li>Wrong name servers for delegated sub- domain (NS records in
+          my name server)</li>
+        <li>Wrong IPv4 address for server (A records)</li>
+        <li>Wrong IPv6 address for server (AAAA records)</li>
+        <li>gethostbyname wrong result (IPv4) or
           ipaddress.IPv6Address&nbsp; (see
           https://docs.python.org/3/library/ipaddress.html)</li>
-      </ol>
-      <li>daemon listening on port?&nbsp; Form a TCP connection</li>
-      <li>Service giving sane answers?</li>
-      <ol>
-        <li>For clear text services - make a query, and test results for
-          correctness</li>
-        <li>For encrypted services - check cert for validity, then make
-          a query, and test results for correctness.</li>
-        <li>HTTP and HTTPS are special cases<br>
+      </ul>
+      <li>Routing failure, firewall failure</li>
+      <ul>
+        <li>remote IP address unpingable ping or ping6 (Not necessarily
+          a failure, but noteworthy)</li>
+        <li>tcptracepath goes the wrong way (IPv4)<br>
         </li>
-      </ol>
-    </ol>
-    <br>
-    It should be easy to generate a configuration file from when the
-    system is working nominally.<br>
-    <br>
-    <tt>{site_name: [ site_name, site_name, ...]<br>
-    </tt>
-    <blockquote><tt># for each site, check the DNS.&nbsp; There is an
-        efficiency that can be achieved and that if a domain is tested
-        once, then it doesn't need testing again.</tt><br>
-      <tt>dns : {</tt><br>
-      <blockquote><tt>NS: [ { ns_name: ns_addr, ns_name: ns_addr,
-          ns_name: ns_addr } ],</tt><br>
-        <tt> # For each name server, get the list of IP addresses.&nbsp;
-          It may differ because of geolocating</tt><br>
-        <tt>A : [ { site_name: [ipv4_address, ipv4_address, ... ],
-          site_name : [ipv4_address, ipv4_address, ... ] }, ...]</tt><br>
-        <tt>AAAA: [ { site_name: ipv6_address, ipv6_address, ... ], {
-          site_name: ipv6_address, ipv6_address, ... ]</tt><br>
-      </blockquote>
-      <tt>}</tt><br>
-      <tt> </tt><br>
-      <tt> # Test that gethostbyname wrong result (IPv4) or
-        ipaddress.IPv6Address are working properly</tt><br>
-      <tt> IP : {<br>
+        <li>tracepath6 goes the wrong way (IPv6)</li>
+      </ul>
+      <li>SNMP errors</li>
+      <ul>
+        <li>No response to UDP (may be a UDP failure or a bad community)
+          <br>
+        </li>
+        <li>No response to TCP (no SYN ACK packet) (TCP failure or
+          firewall)</li>
+        <li>RESET packet in response to SYN packet (TCP failure or
+          firewall)</li>
+        <li>What is the response to an SNMP query with a bad community
+          over TCP?&nbsp; Test this.</li>
+        <li>Repeat for IPv6<br>
+        </li>
+      </ul>
+      <li>Remote host port not listening</li>
+      <ul>
+        <li>tcp port sends RESET packet</li>
+        <li>tcp port does *not* send SYN ACK packet (could be a firewall
+          issue)</li>
+      </ul>
+      <li>Application errors</li>
+      <ul>
+        <li>Application no response (3 handshake completes but then
+          nothing)</li>
+        <li>Application incorrect response (application dependent)</li>
+        <li>Application health check failure (application dependent)</li>
+        <li>HTTP application sends 4xx error in response to known good
+          query</li>
+        <li>HTTP application sends 5xx error in response to known good
+          query</li>
+        <li>SSL failure</li>
+      </ul>
+      <br>
+      <br>
+      <p> It should be easy to generate a configuration file from when
+        the system is working nominally.</p>
+      <br>
+      <tt>{site_name: [ site_name, site_name, ...]<br>
       </tt>
-      <blockquote><tt>ipv4 : <br>
+      <blockquote><tt># for each site, check the DNS.&nbsp; There is an
+          efficiency that can be achieved and that if a domain is tested
+          once, then it doesn't need testing again.</tt><br>
+        <tt>dns : {</tt><br>
+        <blockquote><tt>NS: [ { ns_name: ns_addr, ns_name: ns_addr,
+            ns_name: ns_addr } ],</tt><br>
+          <tt> # For each name server, get the list of IP
+            addresses.&nbsp; It may differ because of geolocating</tt><br>
+          <tt>A : [ { site_name: [ipv4_address, ipv4_address, ... ],
+            site_name : [ipv4_address, ipv4_address, ... ] }, ...]</tt><br>
+          <tt>AAAA: [ { site_name: ipv6_address, ipv6_address, ... ], {
+            site_name: ipv6_address, ipv6_address, ... ]</tt><br>
+        </blockquote>
+        <tt>}</tt><br>
+        <tt> </tt><br>
+        <tt> # Test that gethostbyname wrong result (IPv4) or
+          ipaddress.IPv6Address are working properly</tt><br>
+        <tt> IP : {<br>
         </tt>
-        <blockquote><tt>{<br>
+        <blockquote><tt>ipv4 : <br>
           </tt>
-          <blockquote><tt>site_name : [ { ipv4_address : pingable },
-              {ipv4_address : pingable}, ... ],</tt><tt><br>
-              site_name : [ { ipv4_address : pingable }, </tt><tt><tt>{ipv4_address
-                : pingable}, ...</tt> ],<br>
-              ...<br>
-            </tt></blockquote>
-          <tt>}</tt><br>
-        </blockquote>
-        <tt>ipv6 : [<br>
-        </tt>
-        <blockquote><tt>{ site_name : [ ipv4_address, ipv4_address, ...
-            ]},</tt><br>
-          <tt>{ site_name : [ ipv4_address, ipv4_address, ... ]}</tt><br>
-        </blockquote>
-        <tt>]<br>
-        </tt></blockquote>
-      <tt> </tt><tt> { ipv4: [ ... list of IPv4 addresses to ping and
-        if they reply when nominal ] }</tt><br>
-      <tt> { ipv6: [ ... list of IPv4 addresses to ping and if they
-        reply when nominal ] }</tt><br>
-      <tt> { TCP: [ port, port, ...] }</tt><br>
-      <tt> { UDP: [ port, port, ...] }</tt><br>
-      <tt> { port : [ { query_1: [ allowed_response, allowed_response,
-        ..] },</tt><br>
-      <tt>
-        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+          <blockquote><tt>{<br>
+            </tt>
+            <blockquote><tt>site_name : [ { ipv4_address : pingable },
+                {ipv4_address : pingable}, ... ],</tt><tt><br>
+                site_name : [ { ipv4_address : pingable }, </tt><tt><tt>{ipv4_address
 
-        { query_2: [ allowed_response, allowed_response, ..] },</tt><br>
-      <tt>
-        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 
-        ...</tt><br>
-      <tt>
-        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-        ]</tt><br>
-      <tt> }</tt><br>
-      <tt> { snmp : { args: { parameter : value, ....}, { OID: {
-        nominal: value, upper: upper, lower: lower } } } }</tt><br>
-      <tt> }</tt><br>
-    </blockquote>
-    }<br>
-    <br>
-    <br>
-    <br>
-    <br>
+                  : pingable}, ...</tt> ],<br>
+                ...<br>
+              </tt></blockquote>
+            <tt>}</tt><br>
+          </blockquote>
+          <tt>ipv6 : [<br>
+          </tt>
+          <blockquote><tt>{ site_name : [ ipv4_address, ipv4_address,
+              ... ]},</tt><br>
+            <tt>{ site_name : [ ipv4_address, ipv4_address, ... ]}</tt><br>
+          </blockquote>
+          <tt>]<br>
+          </tt></blockquote>
+        <tt> </tt><tt> { ipv4: [ ... list of IPv4 addresses to ping and
+          if they reply when nominal ] }</tt><br>
+        <tt> { ipv6: [ ... list of IPv4 addresses to ping and if they
+          reply when nominal ] }</tt><br>
+        <tt> { TCP: [ port, port, ...] }</tt><br>
+        <tt> { UDP: [ port, port, ...] }</tt><br>
+        <tt> { port : [ { query_1: [ allowed_response, allowed_response,
+          ..] },</tt><br>
+        <tt>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+
+
+          { query_2: [ allowed_response, allowed_response, ..] },</tt><br>
+        <tt>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+
+
+          ...</tt><br>
+        <tt>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+          ]</tt><br>
+        <tt> }</tt><br>
+        <tt> { snmp : { args: { parameter : value, ....}, { OID: {
+          nominal: value, upper: upper, lower: lower } } } }</tt><br>
+        <tt> }</tt><br>
+      </blockquote>
+      }<br>
+      <br>
+      <br>
+      <br>
+      <br>
+    </ul>
   </body>
 </html>
